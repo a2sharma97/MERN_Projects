@@ -21,7 +21,7 @@ app.post("/phonebook", async (req, res) => {
       email: req.body.email,
       address: req.body.address,
     });
-    res.status(201).json({ msg: "PhoneBook created" });
+    res.status(201).json({ success: true, msg: "PhoneBook created" });
   } catch (err) {
     res.status(500).json({ msg: "Server Error: " + err.message });
   }
@@ -46,7 +46,7 @@ app.put("/update", async (req, res) => {
     return;
   }
   try {
-    await phoneBook.updateOne(
+    const result = await phoneBook.updateOne(
       {
         _id: parsePayload.id,
       },
@@ -57,6 +57,10 @@ app.put("/update", async (req, res) => {
         address: req.body.address,
       }
     );
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ msg: "PhoneBook not found" });
+    }
+    res.status(200).json({ success: true, msg: "PhoneBook Updated" });
   } catch (err) {
     res.status(500).json({ msg: "Server Error: " + err.message });
   }
@@ -76,20 +80,22 @@ app.delete("/delete", async (req, res) => {
     if (result.deletedCount === 0) {
       return res.status(404).json({ msg: "PhoneBook not Found" });
     }
-    res.status(200).json({ msg: "PhoneBook deleted" });
+    res.status(200).json({ success: true, msg: "PhoneBook deleted" });
   } catch (err) {
     res.status(500).json({ msg: "Server Error: ", error: err.message });
   }
 });
 
+//searching
 app.get("/search", async (req, res) => {
-  const inputs = req.query.filter || "";
+  const filter = req.query.filter || "";
   try {
     const pBooks = await phoneBook.find({
       $or: [
         {
           name: {
             $regex: filter,
+            $options: "i",
           },
         },
         {
@@ -100,11 +106,13 @@ app.get("/search", async (req, res) => {
         {
           email: {
             $regex: filter,
+            $options: "i",
           },
         },
         {
           address: {
             $regex: filter,
+            $options: "i",
           },
         },
       ],
@@ -120,6 +128,33 @@ app.get("/search", async (req, res) => {
     );
   } catch (err) {
     res.status(500).json({ msg: "Server Error: ", error: err.message });
+  }
+});
+
+//pagination and sorting: isme client side s page number and limit aati h i.e kis page pr jana h and us particular page
+//pr limit kitni hogi data aane k and sorting is used for sort by name or createdAt
+app.get("/phoneBook", async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = ParseInt(req.query.limit) || 10;
+  const sortBy = req.query.sortBy || "name";
+  const order = req.query.order === "desc" ? -1 : 1;
+
+  try {
+    const result = await phoneBook
+      .find({})
+      .sort({ [sortBy]: order }) //by default mongo sort it by the given order
+      .skip((page - 1) * limit) //this is also a mongo functionality(2-1) * 10 means skip 10 pages and show new
+      .limit(limit); //sets the limit, how many to show
+
+    const total = await phoneBook.countDocuments(); //it counts all the docs in our db
+    res.json({
+      page,
+      totalPages: Math.ceil(total / limit),
+      totalItems: total,
+      items: result,
+    });
+  } catch (err) {
+    res.status(500).json({ msg: "Server Error", error: err.message });
   }
 });
 
