@@ -6,7 +6,11 @@ const createBook = zod.object({
     .min(3, "name is required")
     .max(50)
     .transform((s) => s.trim()),
-  phoneNumber: zod.number().min(10, "number is required").max(10),
+  phoneNumber: zod
+    .string()
+    .min(10, "Phone number must be 10 digits")
+    .max(10, "Phone number must be 10 digits")
+    .regex(/^\d{10}$/, "Phone number must contain only digits"),
   email: zod.string().email(),
   address: zod
     .string()

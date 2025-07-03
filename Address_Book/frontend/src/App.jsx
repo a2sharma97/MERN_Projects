@@ -1,5 +1,7 @@
+import axios from 'axios';
 import { memo, useEffect, useState } from 'react';
 import { BrowserRouter, Outlet, Route, Routes, useNavigate } from 'react-router-dom';
+
 import './App.css';
 
 function App() {
@@ -8,22 +10,20 @@ function App() {
   const [number, setNumber] = useState("")
   const [email, setEmail] = useState("")
   const [address, setAddress] = useState("")
-  const [id, setId] = useState("");
+  const [contact, setContact] = useState({});
   const [loading, setLoading] = useState(true);
 
-  useEffect(()=> {
-    const fetchAll = async() => {
-       const updateRes = await axios.get("http://localhost:3000/");
-       const updatedRes = updateRes.data;
-       setContacts(updatedRes);
-       setName("")
-       setEmail("")
-       setAddress("")
-       setNumber("")
-       setId("");
-       setLoading(false);
+  
+
+  useEffect(() => {
+    const fetchBook = async() => {
+      await axios.get("http://localhost:3000/").then(res => {
+        setContacts(res.data.allPhoneBooks);
+        setLoading(false);
+        
+      })
     }
-    fetchAll();
+    fetchBook();
   },[])
 
 
@@ -33,13 +33,13 @@ function App() {
      <Header />
      <BrowserRouter>
       <Routes>
-        <Route path='/' element= {<Dashboard loading = {loading}/>}>
-            <Route index element ={<PhoneBooks name = {name} email = {email} contacts = {contacts} setId= {setId}/>}/>
+        <Route path='/' element= {<Dashboard loading = {loading} setContacts = {setContacts}/>}>
+            <Route index element ={<PhoneBooks name = {name} email = {email} contacts = {contacts} setContact= {setContact}/>}/>
         </Route>
         <Route path='/add' element= {<AddContact name = {name} setName = {setName} number ={number} 
         setNumber = {setNumber} email = {email} setEmail = {setEmail} address ={address} setAddress = {setAddress} setContacts = {setContacts}/>} />
         <Route path='/editdel' element= {<Details name = {name} setName = {setName} number ={number} 
-        setNumber = {setNumber} email = {email} setEmail = {setEmail} address ={address} setAddress = {setAddress} setContacts = {setContacts} id = {id}  />}/>
+        setNumber = {setNumber} email = {email} setEmail = {setEmail} address ={address} setAddress = {setAddress} setContacts = {setContacts} contact = {contact}  />}/>
       </Routes>
      </BrowserRouter>
     </div>
@@ -47,7 +47,7 @@ function App() {
   )
 }
 
-const Dashboard = ({loading}) => {
+const Dashboard = ({loading, setContacts}) => {
   return (
     <>
     {
@@ -66,7 +66,7 @@ const Dashboard = ({loading}) => {
       <span className="sr-only">Loading...</span> 
     </div> :
       <>
-        <SearchBar />
+        <SearchBar setContacts = {setContacts} />
         <Outlet/>
       </>
     }
@@ -80,10 +80,33 @@ const Header = memo(() => {
   )
 })
 
-const SearchBar = () => {
+const SearchBar = ({setContacts}) => {
+  let canceled = false;
+  const [filter, setFilter] = useState("");
+
+  useEffect(() => {
+    const end = setTimeout(() => {
+      axios.get(`http://localhost:3000/search?filter=${filter}`).then(res => {
+       
+        const data = res.data.allPhoneBooks || res.data;
+        if(filter && data.length === 0) {
+          alert("No Match Found");
+        } else {
+           if(!canceled) { //if axios takes more time to get the request it become a race condition
+             setContacts(data);
+            }
+          }
+      })
+    },650)
+    return () => {
+      canceled = true;
+      clearTimeout(end);
+    }
+  },[filter,setContacts])
+
   return (
     <div className=' flex justify-between m-2 '>
-      <input className='p-2 bg-slate-200 border-transparent outline-blue-400 overflow-hidden rounded-2xl ms-1 w-sm ' type="text" placeholder='Search...' />
+      <input className='p-2 bg-slate-200 border-transparent outline-blue-400 overflow-hidden rounded-2xl ms-1 w-sm ' type="text" placeholder='Search...' onChange={(e) => {setFilter(e.target.value)}}/>
       <AddContactBtn />
     </div>
   )
@@ -103,16 +126,29 @@ const AddContactBtn = () => {
 
 const AddContact = ({name, setName, email, setEmail, number, setNumber, address, setAddress, setContacts}) => {
   const navigation = useNavigate();
+   useEffect(() => {
+      setName("")
+      setEmail("")
+      setNumber("")
+      setAddress("")
+    },[setName, setEmail, setNumber, setAddress])
 
   const handleAddContact = async() => {
     try{
-      const res = await axios.put("http://localhost:3000/phonebook",{
-        name, number, email, address
+      const res = await axios.post("http://localhost:3000/phonebook",{
+        name: name, phoneNumber: number, email: email, address: address
       })
-    fetchAll();
+      const updateRes = await axios.get("http://localhost:3000/");
+       const updatedRes = updateRes.data;
+       
+       setContacts(updatedRes.allPhoneBooks);
+       setName("")
+       setEmail("")
+       setAddress("")
+       setNumber("")
      navigation('/');
     } catch(err) {
-      if(axios.IsAxiosError(err) && err.response) {
+      if(axios.isAxiosError(err) && err.response) {
         alert("Server Error: " + err.response.data.msg);
       } else {
         alert("Some Error: " + err.message);
@@ -145,46 +181,36 @@ const AddContact = ({name, setName, email, setEmail, number, setNumber, address,
   )
 }
 
-const PhoneBooks = ({contacts, setId}) => {
-  const navigate = useNavigate()
-  const handleEditDelete = (id) => {
-    setId(id);
-    navigate('/editdel')
-  }
-  return (
-    <>
-    {contacts.length === 0 ?
-      <div>No Notes Found!</div> :
-      <div className='mt-2'>
-        {
-          contacts.map((contact) => {
-          <div key={contact._id} className='border-2 rounded-xl m-2 p-2 flex bg-blue-600 ' onClick={() => handleEditDelete(contact._id)}>
-             <div className='text-4xl border-2 rounded-full p-1.5 me-1 text-blue-400'>
-              {contact.name[0].uppercase()}
-             </div>
-              <div className='text-white font-medium'>
-                <h3 className='text-xl'>{contact}</h3>
-                <h4 className='text-slate-300'>{contact.email}</h4>
-              </div>
-            </div>
-        })}
-      </div>
-      }
-    </>
-  )
-}
 
-const Details = ({name, setName, email, setEmail, number, setNumber, address, setAddress, id}) => {
+const Details = ({name, setName, email, setEmail, number, setNumber, address, setAddress, contact, setContacts}) => {
     const navigate = useNavigate();
+
+    useEffect(() => {
+      setName(contact.name)
+      setEmail(contact.email)
+      setNumber(contact.phoneNumber)
+      setAddress(contact.address)
+    },[setName, setEmail, setNumber, setAddress])
+
     const handleEdit = async() => {
     try{
       const res = await axios.put("http://localhost:3000/update", {
-        id, name, number, email, address
+        id: contact._id, name, phoneNumber: number, email, address
       })
-      fetchAll();
+      const updateRes = await axios.get("http://localhost:3000/")
+    //  console.log(updateRes)
+      const updatedRes = updateRes.data;
+      // console.log(updatedRes)
+      // console.log(updatedRes.allPhoneBooks)
+      setContacts(updatedRes.allPhoneBooks);
+       setName("")
+       setEmail("")
+       setAddress("")
+       setNumber("")
+      alert(res.msg || "Contact Edited")
       navigate('/');
     }  catch(err) {
-      if(axios.IsAxiosError(err) && err.response) {
+      if(axios.isAxiosError(err) && err.response) {
         alert("Server Error: " + err.response.data.msg);
       } else {
         alert("Some Error: " + err.message);
@@ -194,23 +220,35 @@ const Details = ({name, setName, email, setEmail, number, setNumber, address, se
 
   const handleDelete = async() => {
   try{
-      await axios.delete("http://localhost:3000/delete", {
-        data: { id }
+      const res = await axios.delete("http://localhost:3000/delete", {
+        data: {  id: contact._id }
       })
-      fetchAll()
+      const updateRes = await axios.get("http://localhost:3000/")
+      // console.log(updateRes)
+      const updatedRes = updateRes.data;
+      // console.log(updatedRes)
+      console.log(updatedRes.allPhoneBooks)
+      setContacts(updatedRes.allPhoneBooks);
+       setName("")
+       setEmail("")
+       setAddress("")
+       setNumber("")
+      alert(res.msg || "Contact deleted");
       navigate("/");
     } catch(err) {
-      if(axios.IsAxiosError(err) && err.response) {
+      if(axios.isAxiosError(err) && err.response) {
         alert("Server Error:" + err.response.data.message)
       } else {
         alert("Some Error: " + err.msg);
       }
     }
   }
-
+if (!contact?._id) {
+  return <p>No contact selected. <button className='bg-blue-600 p-2 rounded-2xl font-semibold text-white mr-1' onClick={() => navigate('/')}>Back</button></p>;
+}
 
    return (
-    <div className=' flex  flex-col text-center justify-center items-center'>
+    <div className=' flex  flex-col text-center justify-center items-center my-5 gap-3.5'>
        <form action="#" onSubmit={(e) => e.preventDefault()} className=''>
         <div className='mb-1.5'>
         <label htmlFor="" className='text-xl text-blue-600  p-1 font-medium'>Name:</label>
@@ -237,15 +275,36 @@ const Details = ({name, setName, email, setEmail, number, setNumber, address, se
   )
 }
 
-//tasks
-/*
-1.in my home page, shows only dashboard i.e header, search bar, add contact btn and all the contacts
-2.when i click to add contact btn route to a page in which a form open where we fill the details of contact
-3.when we are on home page and click to any contact it route to a page where the full details of contact will open and
-  and in the same route we have the functionality to edit, delete and a back btn to go back to home page.
-4.in the home page only contacts name, email show by clicking them it route to the edit page
-
-*/
+const PhoneBooks = ({contacts, setContact}) => {
+  const navigate = useNavigate()
+  const handleEditDelete = (contact) => {
+    setContact(contact);
+    navigate('/editdel')
+  }
+  return (
+    <>
+    {contacts.length === 0 ?
+      <div>No Notes Found!</div> :
+      <div className='mt-2'>
+        {
+          contacts.map((contact) => {
+            return (
+          <div key={contact._id} className='border-2 rounded-xl m-2 p-2 flex bg-blue-600 ' onClick={() => handleEditDelete(contact)}>
+             <div className='text-4xl border-2 rounded-full p-1.5 me-1 text-blue-400'>
+              {contact.name[0].toUpperCase()}
+             </div>
+              <div className='text-white font-medium'>
+                <h3 className='text-xl'>{contact.name}</h3>
+                <h4 className='text-slate-300'>{contact.email}</h4>
+              </div>
+            </div>
+            )
+        })}
+      </div>
+      }
+    </>
+  )
+}
 
 
 export default App
