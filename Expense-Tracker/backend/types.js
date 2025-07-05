@@ -14,11 +14,23 @@ const deleteExpense = zod.object({
   id: zod.string().min(1),
 });
 
-const signupSchema = zod.object({
+const userSchema = zod.object({
   username: zod.string().email().require(),
-  password: zod.string().require(),
+  password: zod.string().min(8).require(),
   firstName: zod.string(),
   lastName: zod.string(),
+});
+
+const signupSchema = userSchema.extend({});
+
+const signinSchema = userSchema.extend({});
+
+const updateUserSchema = userSchema.extend({
+  id: zod.string().min(1, "id is required"),
+});
+
+const deleteUserSchema = userSchema.extend({
+  id: zod.string().min(1),
 });
 
 module.exports = {
@@ -26,4 +38,7 @@ module.exports = {
   updateExpense,
   deleteExpense,
   signupSchema,
+  signinSchema,
+  updateUserSchema,
+  deleteUserSchema,
 };
