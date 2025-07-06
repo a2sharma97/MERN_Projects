@@ -33,6 +33,7 @@ router.post("/signup", async (req, res) => {
     expenses: 0,
     income: 0,
     balance: 0,
+    category: 0,
     date: Date(),
   });
 
@@ -62,7 +63,7 @@ router.post("/signin", async (req, res) => {
     username: body.username,
     password: body.password,
   });
-
+  console.log(user + "signin user");
   if (user) {
     const token = jwt.sign(
       {
@@ -84,31 +85,28 @@ router.put("/user", authMiddleware, async (req, res) => {
   const body = req.body;
   const updateBody = updateUserSchema.safeParse(body);
   if (!updateBody.success) {
-    res.status(411).json({
+    return res.status(411).json({
       message: "Invalid input",
     });
   }
-  await User.updateOne(
+  const result = await User.updateOne(
     {
-      _id: body.userId,
+      _id: req.userId,
     },
-    req.body
+    updateBody.data
   );
-
-  res.message(200).json({
+  if (result.matchedCount === 0) {
+    return res.status(404).json({
+      message: "User not found",
+    });
+  }
+  res.status(200).json({
     success: true,
     message: "Updated sucessfully",
   });
 });
 
 router.delete("/user", authMiddleware, async (req, res) => {
-  const body = req.body;
-  const parseBody = deleteUserSchema.safeParse(body);
-  if (!parseBody.success) {
-    return res.status(411).json({
-      message: "Invlid account",
-    });
-  }
   const result = await User.deleteOne({
     _id: body.userId,
   });

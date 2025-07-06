@@ -23,7 +23,7 @@ const userSchema = mongoose.Schema({
     trim: true,
     lowercase: true,
     minLength: 3,
-    maxLength: 15,
+    maxLength: 25,
   },
   password: {
     type: String,
@@ -60,6 +60,13 @@ const expenseSchema = mongoose.Schema({
   income: {
     type: Number,
     required: true,
+  },
+  category: {
+    type: String,
+    required: true,
+    trim: true,
+    minLength: 0,
+    maxLength: 12,
   },
   balance: {
     type: Number,

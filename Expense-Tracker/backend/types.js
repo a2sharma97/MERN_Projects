@@ -1,8 +1,12 @@
 const zod = require("zod");
 
 const createExpense = zod.object({
-  expense: zod.string().min(1),
   income: zod.string().min(1),
+  category: zod
+    .string()
+
+    .transform((s) => s.trim()),
+  expenses: zod.string().min(1),
   date: zod.date(),
 });
 
@@ -10,13 +14,9 @@ const updateExpense = createExpense.extend({
   id: zod.string().min(1),
 });
 
-const deleteExpense = zod.object({
-  id: zod.string().min(1),
-});
-
 const userSchema = zod.object({
-  username: zod.string().email().require(),
-  password: zod.string().min(8).require(),
+  username: zod.string().email(),
+  password: zod.string().min(8),
   firstName: zod.string(),
   lastName: zod.string(),
 });
