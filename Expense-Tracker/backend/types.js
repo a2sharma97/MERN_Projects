@@ -2,10 +2,7 @@ const zod = require("zod");
 
 const createExpense = zod.object({
   income: zod.string().min(1),
-  category: zod
-    .string()
-
-    .transform((s) => s.trim()),
+  category: zod.string().transform((s) => s.trim()),
   expenses: zod.string().min(1),
   date: zod.date(),
 });
