@@ -14,6 +14,8 @@ function App() {
     <>
     {/* <Header expense = {expense} income = {income} /> */}
     {/* <AddMoney income = {income} expense={expense} setIncome={setIncome} setExpense={setExpense} setRecords={setRecords} /> */}
+    {/* <Signup/>
+    <Signin/> */}
     <BrowserRouter>
       <Routes>
         <Route path='/signin' element = {<Signin/>}/>
