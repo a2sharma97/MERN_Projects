@@ -15,49 +15,8 @@ const connectDB = async () => {
 
 connectDB();
 
-const userSchema = mongoose.Schema({
-  username: {
-    type: String,
-    required: true,
-    unique: true,
-    trim: true,
-    lowercase: true,
-    minLength: 3,
-    maxLength: 25,
-  },
-  password: {
-    type: String,
-    required: true,
-    trim: true,
-    minLength: 8,
-  },
-  firstName: {
-    type: String,
-    required: true,
-    trim: true,
-    minLength: 3,
-    maxLength: 15,
-  },
-  lastName: {
-    type: String,
-    required: true,
-    trim: true,
-    minLength: 3,
-    maxLength: 15,
-  },
-});
-
 const expenseSchema = mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
-  },
-  expenses: {
-    type: Number,
-    required: true,
-  },
-  income: {
+  expense: {
     type: Number,
     required: true,
   },
@@ -68,19 +27,10 @@ const expenseSchema = mongoose.Schema({
     minLength: 0,
     maxLength: 12,
   },
-  balance: {
-    type: Number,
-    required: true,
-  },
-  date: {
-    type: Date,
-    required: true,
-  },
 });
 
-const Expense = mongoose.model("allExpense", expenseSchema);
-const User = mongoose.model("User", userSchema);
+const Expense = mongoose.model("Expense", expenseSchema);
+
 module.exports = {
   Expense,
-  User,
 };
