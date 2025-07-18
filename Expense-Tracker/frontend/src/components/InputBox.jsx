@@ -1,10 +1,13 @@
 import axios from "axios";
-import { useContext } from "react";
+import { motion } from "motion/react";
+import { useContext, useState } from "react";
 import ExpenseContext from "../contexts/expenseTrackerContext";
+import { Model } from "./Model";
 export const InputBox = () => {
    
     const {setIncome, setExpense, setCategory, setSpend, category, expense, income,setInputIncome, setExpenseInput} = useContext(ExpenseContext)
-
+    const [model, setModel] = useState(false)
+    const [isVisible, setIsVisible] = useState(true);
     const handleExpense = async(e) => {
         e.preventDefault();
         try {
@@ -17,6 +20,8 @@ export const InputBox = () => {
             setSpend(updatedRes);
             setInputIncome(prev => prev + (income > 0 ? income : 0))
             setExpenseInput(prev => prev + (expense > 0 ? expense : 0))
+            setModel(true) 
+            setIsVisible(!isVisible)
             setIncome("");
             setExpense("");
             setCategory("");
@@ -36,9 +41,12 @@ export const InputBox = () => {
                 <input onChange={(e) => {setExpense(Number(e.target.value))}} required className="p-2 bg-slate-200 rounded-xl font-medium outline-none hover:cursor-text " value={expense > 0 ? expense : ""} type="text" placeholder="Enter expense" />
                 <input onChange={(e) => {setCategory(e.target.value)}} className="p-2 bg-slate-200 rounded-xl font-medium outline-none hover:cursor-text " value={category} type="text" placeholder="Enter Category" />
                 
-                <button onClick={handleExpense} className="rounded-md bg-yellow-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs
+                <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }} onClick={handleExpense} className="rounded-md bg-yellow-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs
                 hover:bg-yellow-500 focus-visible:outline-2 focus-visible:outline-offset-2
-                focus-visible:outline-yellow-600">submit</button>
+                focus-visible:outline-yellow-600">submit</motion.button>
+                {model && <Model onclose = {()=>setModel(false)} />}
             </div>
         </div>
     )
