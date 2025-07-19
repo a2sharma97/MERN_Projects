@@ -23,34 +23,38 @@ router.post("/signup", async (req, res) => {
     return res.status(411).json({ message: "invalid input" });
   }
 
-  const existingUser = await User.findOne({
-    username: payload.username,
-  });
+  try {
+    const existingUser = await User.findOne({
+      username: payload.username,
+    });
 
-  if (existingUser) {
-    return res.status(400).json({ message: "Email already taken" });
+    if (existingUser) {
+      return res.status(400).json({ message: "Email already taken" });
+    }
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(payload.password, salt);
+    const user = await User.create({
+      firstName: payload.firstName,
+      lastName: payload.lastName,
+      username: payload.username,
+      password: hashedPassword,
+    });
+    const userId = user._id;
+    const token = jwt.sign(
+      {
+        userId,
+      },
+      JWT_SECRET
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "User created successfully",
+      token,
+    });
+  } catch (err) {
+    res.status(404).json({ message: err.message });
   }
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(payload.password, salt);
-  const user = await User.create({
-    firstName: payload.firstName,
-    lastName: payload.lastName,
-    username: payload.username,
-    password: hashedPassword,
-  });
-  const userId = user._id;
-  const token = jwt.sign(
-    {
-      userId,
-    },
-    JWT_SECRET
-  );
-
-  res.status(200).json({
-    success: true,
-    message: "User created successfully",
-    token,
-  });
 });
 
 const signinSchema = zod.object({
@@ -103,7 +107,10 @@ router.put("/update", authMiddleware, async (req, res) => {
     {
       _id: req.userId,
     },
-    updateBody.data
+    {
+      firstName: payload.firstName,
+      lastName: payload.lastName,
+    }
   );
   if (result.matchedCount === 0) {
     return res.status(404).json({
